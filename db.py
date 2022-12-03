@@ -4,12 +4,20 @@ import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 DB_PATH = "wishlist.db"
 
-logging.basicConfig(level=logging.DEBUG, format='%(message)s')  # TODO make set up in main.py
 logger = logging.getLogger(__name__)
+
+
+class TableName(Enum):
+    CREATOR = "creator"
+    PRESENTER = "presenter"
+    WISH = "wish"
+    RELATION = "relation"
+    BOOKED = "booked"
+    PRESENTED = "presented"
 
 
 class RelationType(Enum):
@@ -48,14 +56,14 @@ class Table(ABC):
 class Creator(Table):
     def __init__(self):
         super().__init__()
-        self.table_name = "creator"
+        self.table_name = TableName.CREATOR.value
 
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
-                        creator_id INT NOT NULL PRIMARY KEY
-                    )"""
+                        creator_id TEXT NOT NULL PRIMARY KEY
+                    )"""  # TODO: add name
             cur.execute(query)
 
     def add(self,
@@ -72,7 +80,7 @@ class Creator(Table):
 class Presenter(Table):
     def __init__(self):
         super().__init__()
-        self.table_name = "presenter"
+        self.table_name = TableName.PRESENTER.value
 
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
@@ -94,7 +102,7 @@ class Presenter(Table):
 class Wish(Table):
     def __init__(self):
         super().__init__()
-        self.table_name = "wish"
+        self.table_name = TableName.WISH.value
 
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
@@ -117,7 +125,7 @@ class Wish(Table):
                     )"""
             cur.execute(query)
 
-    # TODO: add photo
+    # TODO: add photo https://pynative.com/python-sqlite-blob-insert-and-retrieve-digital-data/
     def add(self,
             creator_id: int,
             name: str,
@@ -150,7 +158,7 @@ class Wish(Table):
 class Relation(Table):
     def __init__(self):
         super().__init__()
-        self.table_name = "relation"
+        self.table_name = TableName.RELATION.value
 
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
@@ -182,7 +190,7 @@ class Relation(Table):
 class Booked(Table):
     def __init__(self):
         super().__init__()
-        self.table_name = "booked"
+        self.table_name = TableName.BOOKED.value
 
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
@@ -224,45 +232,12 @@ class Presented(Booked):
         ...
 
 
-# TODO make tests correctly automatic without using actual db
-def test_wish() -> None:
-    creator = Creator()
-    creator.delete()
-    creator.create_table()
-
-    wish = Wish()
-    wish.delete()
-    wish.create_table()
-    wish.add(creator_id=10, name="bla", priority=5)
-    wish.add(creator_id=10, name="noprio")
-    wish.add(creator_id=11, name="test", quantity=5)
-    wish.add(creator_id=10, name="TEST", priority=1, quantity=10)
-    with db_ops(DB_PATH) as cur:
-        rows = list(cur.execute(f"SELECT name, quantity FROM {wish.table_name}"))
-        print(rows)
-
-        assert rows[0] == ("bla", None)
-        assert rows[2] == ("test", 5)
-        assert rows[3] == ("TEST", 10)
-
-        assert wish.search_by_creator(10) == [4, 1, 2]
-
-
-def test_booked() -> None:
-    booked = Booked()
-    booked.delete()
-    booked.create_table()
-
-    booked.add(1, 2, 3)
-    booked.add(2, 5, 3)
-    with db_ops(DB_PATH) as cur:
-        rows = list(cur.execute(f"SELECT creator_id, date FROM {booked.table_name}"))
-        print(rows)
-
-        # check delay of adding
-        assert rows[0][1] != rows[1][1]
-
-
-if __name__ == "__main__":
-    test_wish()
-    test_booked()
+def create_tables_dict() -> Dict[Enum, Table]:
+    return {
+        TableName.CREATOR: Creator(),
+        TableName.PRESENTER: Presenter(),
+        TableName.WISH: Wish(),
+        TableName.RELATION: Relation(),
+        TableName.BOOKED: Booked(),
+        TableName.PRESENTED: Presented(),
+    }
