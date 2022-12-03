@@ -144,7 +144,7 @@ class Wish(Table):
             cur.execute(
                 f"""
                 INSERT INTO {self.table_name} VALUES
-                    (null, ?, ?, 0, 0, ?, ?, ?, ?)
+                    (null, ?, ?, 0, 0, ?, ?, ?, ?, ?)
                 """, [creator_name, name, priority, relation_type, link, price, quantity])
 
     def search_by_creator(self, creator_name: str) -> List[int]:

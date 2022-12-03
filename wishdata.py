@@ -1,4 +1,4 @@
-class Wish:
+class WishData:
     def __init__(self):
         self.name = None
         self.price = None
@@ -6,7 +6,7 @@ class Wish:
         self.desc = None
 
     def update_name(self, name):
-        self.desc = name
+        self.name = name
 
     def update_photo(self, photo):
         self.photo = photo
