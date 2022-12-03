@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import sqlite3
 import time
@@ -45,7 +47,7 @@ class Table(ABC):
             cur.execute(f"DROP TABLE IF EXISTS {self.table_name}")
 
     @abstractmethod
-    def create_table(self):
+    def create_table(self) -> Table:
         pass
 
     @abstractmethod
@@ -58,13 +60,14 @@ class Creator(Table):
         super().__init__()
         self.table_name = TableName.CREATOR.value
 
-    def create_table(self) -> None:
+    def create_table(self) -> Table:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
                         creator_name TEXT NOT NULL PRIMARY KEY
                     )"""  # TODO: add name
             cur.execute(query)
+        return self
 
     def add(self,
             telegram_id: str
@@ -82,13 +85,14 @@ class Presenter(Table):
         super().__init__()
         self.table_name = TableName.PRESENTER.value
 
-    def create_table(self) -> None:
+    def create_table(self) -> Table:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
                         presenter_name TEXT NOT NULL PRIMARY KEY
                     )"""
             cur.execute(query)
+        return self
 
     def add(self, telegram_id: int) -> None:
         with db_ops(self.db_path) as cur:
@@ -104,7 +108,7 @@ class Wish(Table):
         super().__init__()
         self.table_name = TableName.WISH.value
 
-    def create_table(self) -> None:
+    def create_table(self) -> Table:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name}
                     (   
@@ -124,6 +128,7 @@ class Wish(Table):
                         FOREIGN KEY(creator_name) REFERENCES creator(creator_name)
                     )"""
             cur.execute(query)
+        return self
 
     # TODO: add photo https://pynative.com/python-sqlite-blob-insert-and-retrieve-digital-data/
     def add(self,
@@ -160,7 +165,7 @@ class Relation(Table):
         super().__init__()
         self.table_name = TableName.RELATION.value
 
-    def create_table(self) -> None:
+    def create_table(self) -> Table:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     (
@@ -173,6 +178,7 @@ class Relation(Table):
                     FOREIGN KEY(presenter_name) REFERENCES presenter(presenter_name)
                     )"""
             cur.execute(query)
+        return self
 
     def add(self,
             creator_name: str,
@@ -192,7 +198,7 @@ class Booked(Table):
         super().__init__()
         self.table_name = TableName.BOOKED.value
 
-    def create_table(self) -> None:
+    def create_table(self) -> Table:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     (   
@@ -206,6 +212,7 @@ class Booked(Table):
                         FOREIGN KEY(presenter_name) REFERENCES presenter(presenter_name)
                     )"""
             cur.execute(query)
+        return self
 
     def add(self,
             creator_name: str,
@@ -234,10 +241,10 @@ class Presented(Booked):
 
 def create_tables_dict() -> Dict[Enum, Table]:
     return {
-        TableName.CREATOR: Creator(),
-        TableName.PRESENTER: Presenter(),
-        TableName.WISH: Wish(),
-        TableName.RELATION: Relation(),
-        TableName.BOOKED: Booked(),
-        TableName.PRESENTED: Presented(),
+        TableName.CREATOR: Creator().create_table(),
+        TableName.PRESENTER: Presenter().create_table(),
+        TableName.WISH: Wish().create_table(),
+        TableName.RELATION: Relation().create_table(),
+        TableName.BOOKED: Booked().create_table(),
+        TableName.PRESENTED: Presented().create_table(),
     }
