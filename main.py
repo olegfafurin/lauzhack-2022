@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 WISHLIST_BOT_TOKEN = os.environ["WISHLIST_BOT_TOKEN"]
 ROLE_CHOICE, MAKE_A_WISH, SEE_WISHES_FOR_USER, NEW_WISH_NAME_REQUEST, NEW_WISH_PHOTO_REQUEST, \
-    NEW_WISH_PRICE_REQUEST, EDIT_WISH, ADD_NAME, ADD_PHOTO, NEW_WISH_DESC_REQUEST, NEW_WISH_CONFIRMATION, \
-BACK_TO_MAIN, WHOSE_LIST = range(12)
+NEW_WISH_PRICE_REQUEST, EDIT_WISH, ADD_NAME, ADD_PHOTO, NEW_WISH_DESC_REQUEST, NEW_WISH_CONFIRMATION, \
+BACK_TO_MAIN, WHOSE_LIST = range(13)
 
 wish_dict: Dict[int, WishData] = dict()
 
@@ -172,21 +172,19 @@ async def new_wish_desc_request(update: Update, context: ContextTypes.DEFAULT_TY
     wish_confirmation_markup = ReplyKeyboardMarkup(wish_confirmation_keyboard, one_time_keyboard=True)
 
     await update.message.reply_text(
-        "Please review your wish before adding:[TODO]",
-        reply_markup = ReplyKeyboardRemove()
+        f"Please review your wish before adding:\n\n{tmp_wish}",
+        reply_markup=wish_confirmation_markup
     )
     return NEW_WISH_CONFIRMATION
+
 
 async def check_who(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     logger.info(f"User {user.name} finds a friend's list")
-    # TODO fix
-    tmp_wish = local_storage[user.id]
-    if tmp_wish is not None:
-        return
+    # TODO check if the name exists in the DB
     await update.message.reply_text(
         "This user has not created a list so far. Please try again",
-        reply_markup = ReplyKeyboardRemove()
+        reply_markup=ReplyKeyboardRemove()
     )
     return ConversationHandler.END
 
@@ -275,7 +273,7 @@ def main():
                 MessageHandler(filters.Regex("^(Confirm|Reject)$"), new_wish_confirmation)
             ],
 
-            WHOSE_LIST:[MessageHandler(filters.TEXT & ~filters.COMMAND, check_who)]},
+            WHOSE_LIST: [MessageHandler(filters.TEXT & ~filters.COMMAND, check_who)]},
         fallbacks=[CommandHandler("cancel", cancel)]
     )
 
