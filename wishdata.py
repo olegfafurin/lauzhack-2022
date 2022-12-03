@@ -1,18 +1,21 @@
+from dataclasses import dataclass
+from typing import Optional
+
+
+@dataclass
 class WishData:
-    def __init__(self):
-        self.name = None
-        self.price = None
-        self.photo = None
-        self.desc = None
+    creator_name: str
 
-    def update_name(self, name):
-        self.name = name
+    booked: bool
+    presented: bool
 
-    def update_photo(self, photo):
-        self.photo = photo
+    wish_id: Optional[int] = None
+    name: Optional[str] = None
 
-    def update_price(self, price):
-        self.price = price
-
-    def update_desc(self, desc):
-        self.desc = desc
+    priority: Optional[int] = None
+    relation_type: Optional[str] = None
+    link: Optional[str] = None
+    price: Optional[str] = None
+    photo: Optional[bytearray] = None
+    desc: Optional[str] = None
+    quantity: Optional[str] = None

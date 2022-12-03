@@ -1,4 +1,3 @@
-import collections
 import logging
 import os
 from typing import Dict
@@ -12,8 +11,9 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-from wishdata import WishData
+
 from db import create_tables_dict, TableName
+from wishdata import WishData
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -58,7 +58,7 @@ async def role_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         await update.message.reply_text(
             f"What do you wish?",
         )
-        wish_dict[user.id] = WishData()
+        wish_dict[user.id] = WishData(creator_name=user.username, booked=False, presented=False)
         return NEW_WISH_NAME_REQUEST
     elif choice == "See wishes":
         await update.message.reply_text(
@@ -80,6 +80,9 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f"User {user.name} requested a list of wishes for {update.message.text}")
 
     logger.info(f"found: {tables[TableName.WISH].search_by_creator(creator_name=update.message.text)}")
+    # TODO add other properties
+    #  with picture reverting bytearray
+
     await update.message.reply_text(
         f"[TODO] Showing wishes for {update.message.text}\n\n"
     )
@@ -88,11 +91,13 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def new_wish_name_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     wish_name = update.message.text
-    logger.info(f"user {update.message.from_user.name} wants a {wish_name}")
+    username = update.message.from_user.username
+    logger.info(f"user {username} wants a {wish_name}")
     user_id = update.message.from_user.id
+
     tmp_wish: WishData = wish_dict[user_id]
-    if tmp_wish is not None:
-        tmp_wish.update_name(wish_name)
+    tmp_wish.name = wish_name
+
     await update.message.reply_text(
         f"Ok, you want a {wish_name}.\n\nDo you have a picture of it?",
         reply_markup=skip_markup,
@@ -103,9 +108,12 @@ async def new_wish_name_request(update: Update, context: ContextTypes.DEFAULT_TY
 async def new_wish_photo_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     photo_file = await update.message.photo[-1].get_file()
+    buf = bytearray()
+    await photo_file.download_as_bytearray(buf=buf)
+
     tmp_wish: WishData = wish_dict[user.id]
-    if tmp_wish is not None:
-        tmp_wish.update_photo(photo_file)
+    tmp_wish.photo = buf
+
     await update.message.reply_text(
         "Thanks for a pic!\n\nHow much does your wish cost?",
         reply_markup=skip_markup,
@@ -128,9 +136,10 @@ async def new_wish_price_request(update: Update, context: ContextTypes.DEFAULT_T
     wish_price = update.message.text
     user = update.message.from_user
     logger.info(f"user {user.name}'s wish price is {wish_price}")
+
     tmp_wish = wish_dict[user.id]
-    if tmp_wish is not None:
-        tmp_wish.update_price(wish_price)
+    tmp_wish.price = wish_price
+
     await update.message.reply_text(
         f"Ok, estimated price for your wish is {wish_price}\n\nFeel free to add a quick description to your wish!",
         reply_markup=skip_markup,
@@ -153,8 +162,9 @@ async def new_wish_desc_request(update: Update, context: ContextTypes.DEFAULT_TY
     user = update.message.from_user
     desc = update.message.text
     logger.info(f"User {user.name} added a description {desc} of their new wish")
+
     tmp_wish = wish_dict[user.id]
-    tmp_wish.update_desc(desc)
+    tmp_wish.desc = desc
 
     wish_confirmation_keyboard = [["Reject", "Confirm"]]
     wish_confirmation_markup = ReplyKeyboardMarkup(wish_confirmation_keyboard, one_time_keyboard=True)

@@ -114,16 +114,18 @@ class Wish(Table):
                     (   
                         wish_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         
-                        creator_name TEXT NOT NULL,
-                        name TEXT NOT NULL,
-                        
                         booked BOOLEAN NOT NULL,
                         presented BOOLEAN NOT NULL,
+                        
+                        creator_name TEXT NOT NULL,
+                        name TEXT NOT NULL,
                         
                         priority INTEGER,
                         relation_type TEXT,
                         link TEXT,
                         price REAL,
+                        photo BLOB,
+                        desc TEXT,
                         quantity INTEGER,
                         FOREIGN KEY(creator_name) REFERENCES creator(creator_name)
                     )"""
@@ -135,17 +137,19 @@ class Wish(Table):
             creator_name: str,
             name: str,
             priority: Optional[int] = None,
-            relation_type: Optional[int] = None,
+            relation_type: Optional[str] = None,
             link: Optional[str] = None,
             price: Optional[float] = None,
+            photo: Optional[bytearray] = None,
+            desc: Optional[str] = None,
             quantity: Optional[int] = None
             ) -> None:
         with db_ops(self.db_path) as cur:
             cur.execute(
                 f"""
                 INSERT INTO {self.table_name} VALUES
-                    (null, ?, ?, 0, 0, ?, ?, ?, ?, ?)
-                """, [creator_name, name, priority, relation_type, link, price, quantity])
+                    (null, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, [creator_name, name, priority, relation_type, link, price, photo, desc, quantity])
 
     def search_by_creator(self, creator_name: str) -> List[int]:
         with db_ops(self.db_path) as cur:

@@ -41,5 +41,8 @@ def test_booked() -> None:
 
 
 if __name__ == "__main__":
-    test_wish()
-    test_booked()
+    # test_wish()
+    # test_booked()
+
+    wish = Wish()
+    wish.delete()
