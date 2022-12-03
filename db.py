@@ -1,9 +1,10 @@
 import logging
 import sqlite3
+import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 DB_PATH = "wishlist.db"
 
@@ -126,6 +127,18 @@ class Wish(Table):
                     (null, ?, ?, 0, 0, ?, ?, ?, ?)
                 """, [creator_id, name, priority, link, price, quantity])
 
+    def search_by_creator(self, creator_id: int) -> List[int]:
+        with db_ops(self.db_path) as cur:
+            return list(res[0] for res in cur.execute(
+                f"""
+                SELECT wish_id FROM {self.table_name} 
+                WHERE creator_id = ?
+                ORDER BY priority ASC
+                NULLS LAST
+                """, [creator_id, ]
+            )
+                        )
+
 
 class Friendship(Table):
     def __init__(self):
@@ -172,6 +185,7 @@ class Booked(Table):
                         present_id INT NOT NULL,
                         creator_id INT NOT NULL,
                         presenter_id INT NOT NULL,
+                        date INT NOT NULL,
                         FOREIGN KEY(present_id) REFERENCES present(present_id),
                         FOREIGN KEY(creator_id) REFERENCES creator(creator_id),
                         FOREIGN KEY(presenter_id) REFERENCES presenter(presenter_id)
@@ -182,19 +196,25 @@ class Booked(Table):
             creator_id: int,
             presenter_id: int,
             present_id: int,
+            date: Optional[int] = None
             ) -> None:
+        if not date:
+            date = int(time.time() * 1000)
         with db_ops(self.db_path) as cur:
             cur.execute(
                 f"""
                 INSERT INTO {self.table_name} VALUES
-                    (null, ?, ?, ?)
-                """, [creator_id, presenter_id, present_id])
+                    (null, ?, ?, ?, ?)
+                """, [creator_id, presenter_id, present_id, date])
 
 
 class Presented(Booked):
     def __init__(self):
         super().__init__()
         self.table_name = "presented"
+
+    def do_present_wish(self, present_id: int) -> None:
+        ...
 
 
 # TODO make tests correctly automatic without using actual db
@@ -206,13 +226,19 @@ def test_wish() -> None:
     wish = Wish()
     wish.delete()
     wish.create_table()
-    wish.add(creator_id=10, name="bla")
-    wish.add(creator_id=10, name="blablab", quantity=5)
+    wish.add(creator_id=10, name="bla", priority=5)
+    wish.add(creator_id=10, name="noprio")
+    wish.add(creator_id=11, name="test", quantity=5)
+    wish.add(creator_id=10, name="TEST", priority=1, quantity=10)
     with db_ops(DB_PATH) as cur:
         rows = list(cur.execute(f"SELECT name, quantity FROM {wish.table_name}"))
-        assert rows[0] == ("bla", None)
-        assert rows[1] == ("blablab", 5)
         print(rows)
+
+        assert rows[0] == ("bla", None)
+        assert rows[2] == ("test", 5)
+        assert rows[3] == ("TEST", 10)
+
+        assert wish.search_by_creator(10) == [4, 1, 2]
 
 
 def test_booked() -> None:
@@ -223,8 +249,11 @@ def test_booked() -> None:
     booked.add(1, 2, 3)
     booked.add(2, 5, 3)
     with db_ops(DB_PATH) as cur:
-        rows = list(cur.execute(f"SELECT creator_id FROM {booked.table_name}"))
+        rows = list(cur.execute(f"SELECT creator_id, date FROM {booked.table_name}"))
         print(rows)
+        
+        # check delay of adding
+        assert rows[0][1] != rows[1][1]
 
 
 if __name__ == "__main__":
