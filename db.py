@@ -51,21 +51,19 @@ class Creator(Table):
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
-                        telegram_id INT 
-                        deadline DATE
+                        creator_id INT PRIMARY KEY
                     )"""
             cur.execute(query)
 
     def add(self,
-            telegram_id: str,
-            deadline: Optional[str] = None
+            telegram_id: str
             ) -> None:
         with db_ops(self.db_path) as cur:
             cur.execute(
-                """
-                INSERT INTO creator VALUES
-                    (?, ?)
-                """, [telegram_id, deadline])
+                f"""
+                INSERT INTO {self.table_name} VALUES
+                    (?)
+                """, [telegram_id, ])
 
 
 class Presenter(Table):
@@ -77,7 +75,7 @@ class Presenter(Table):
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
-                        telegram_id INT
+                        presenter_id INT PRIMARY KEY
                     )"""
             cur.execute(query)
 
@@ -98,14 +96,17 @@ class Wish(Table):
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name}
-                    (
-                        name TEXT,
-                        booked BOOLEAN,
-                        presented BOOLEAN,
+                    (   
+                        wish_id INT PRIMARY KEY AUTOINCREMENT,
+                        creator_id INT NOT NULL FOREIGN KEY REFERENCES creator(creator_id),
+                        name TEXT NOT NULL,
+                        booked BOOLEAN NOT NULL,
+                        presented BOOLEAN NOT NULL,
                         priority INT,
                         link TEXT,
                         price REAL,
-                        quantity INT
+                        quantity INT,
+                        PRIMARY KEY (
                     )"""
             cur.execute(query)
 
@@ -133,10 +134,11 @@ class Friendship(Table):
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
-                    ( 
-                    creator_id INT, 
-                    presenter_id INT, 
-                    type TEXT 
+                    (
+                    friendship_id INT PRIMARY KEY AUTOINCREMENT,
+                    creator_id INT NOT NULL FOREIGN KEY REFERENCES creator(creator_id),
+                    presenter_id INT NOT NULLFOREIGN KEY REFERENCES presenter(presenter_id),
+                    type TEXT
                     )"""
             cur.execute(query)
 
@@ -153,18 +155,19 @@ class Friendship(Table):
                 """, [creator_id, presenter_id, relation_type.value])
 
 
-class Presented(Table):
+class Booked(Table):
     def __init__(self):
         super().__init__()
-        self.table_name = "presented"
+        self.table_name = "booked"
 
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
-                    ( 
-                        present_id INT,
-                        creator_id INT, 
-                        presenter_id INT
+                    (   
+                        {self.table_name}_id INT PRIMARY KEY AUTOINCREMENT,
+                        present_id INT NOT NULL FOREIGN KEY REFERENCES present(present_id),
+                        creator_id INT NOT NULL FOREIGN KEY REFERENCES creator(creator_id),
+                        presenter_id INT NOT NULLFOREIGN KEY REFERENCES presenter(presenter_id),
                     )"""
             cur.execute(query)
 
@@ -179,6 +182,12 @@ class Presented(Table):
                 INSERT INTO {self.table_name} VALUES
                     (?, ?, ?)
                 """, [creator_id, presenter_id, present_id])
+
+
+class Presented(Booked):
+    def __init__(self):
+        super().__init__()
+        self.table_name = "presented"
 
 
 # TODO make test normal without using actual db
