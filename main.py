@@ -23,15 +23,17 @@ logger = logging.getLogger(__name__)
 
 WISHLIST_BOT_TOKEN = os.environ["WISHLIST_BOT_TOKEN"]
 ROLE_CHOICE, MAKE_A_WISH, SEE_WISHES_FOR_USER, NEW_WISH_NAME_REQUEST, NEW_WISH_PHOTO_REQUEST, \
-NEW_WISH_PRICE_REQUEST, EDIT_WISH, ADD_NAME, ADD_PHOTO, NEW_WISH_DESC_REQUEST, \
-NEW_WISH_CONFIRMATION = range(11)
+    NEW_WISH_PRICE_REQUEST, EDIT_WISH, ADD_NAME, ADD_PHOTO, NEW_WISH_DESC_REQUEST, NEW_WISH_CONFIRMATION, \
+BACK_TO_MAIN, WHOSE_LIST = range(12)
 
 wish_dict: Dict[int, WishData] = dict()
 
 tables = create_tables_dict()
 
 skip_keyboard = [["Skip"]]
+back_main_keyboard = [["Back to main menu"]]
 skip_markup = ReplyKeyboardMarkup(skip_keyboard, one_time_keyboard=True)
+back_markup = ReplyKeyboardMarkup(back_main_keyboard, one_time_keyboard=True)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -64,7 +66,7 @@ async def role_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         await update.message.reply_text(
             "Please type a target username",
         )
-        return SEE_WISHES_FOR_USER
+        return WHOSE_LIST
     elif choice == "Edit wishes":
         await update.message.reply_text(
             "TODO edit wishes...",
@@ -170,10 +172,23 @@ async def new_wish_desc_request(update: Update, context: ContextTypes.DEFAULT_TY
     wish_confirmation_markup = ReplyKeyboardMarkup(wish_confirmation_keyboard, one_time_keyboard=True)
 
     await update.message.reply_text(
-        f"Please review your wish before adding:\n\n{tmp_wish}",
-        reply_markup=wish_confirmation_markup
+        "Please review your wish before adding:[TODO]",
+        reply_markup = ReplyKeyboardRemove()
     )
     return NEW_WISH_CONFIRMATION
+
+async def check_who(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = update.message.from_user
+    logger.info(f"User {user.name} finds a friend's list")
+    # TODO fix
+    tmp_wish = local_storage[user.id]
+    if tmp_wish is not None:
+        return
+    await update.message.reply_text(
+        "This user has not created a list so far. Please try again",
+        reply_markup = ReplyKeyboardRemove()
+    )
+    return ConversationHandler.END
 
 
 async def skip_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -259,8 +274,9 @@ def main():
             NEW_WISH_CONFIRMATION: [
                 MessageHandler(filters.Regex("^(Confirm|Reject)$"), new_wish_confirmation)
             ],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
+
+            WHOSE_LIST:[MessageHandler(filters.TEXT & ~filters.COMMAND, check_who)]},
+        fallbacks=[CommandHandler("cancel", cancel)]
     )
 
     application.add_handler(conv_handler)
