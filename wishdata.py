@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 
+PHOTO_PLACEHOLDER = "Some photo"
+
 
 @dataclass
 class WishData:
@@ -19,3 +21,9 @@ class WishData:
     photo: Optional[bytearray] = None
     desc: Optional[str] = None
     quantity: Optional[str] = None
+
+    def __repr__(self):
+        d = self.__dict__
+        if d["photo"]:
+            d["photo"] = PHOTO_PLACEHOLDER
+        return d.__repr__()
