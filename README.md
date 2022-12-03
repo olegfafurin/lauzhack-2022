@@ -1,5 +1,8 @@
 # Wishlist
 
+## Setup
+```pip install requirements.txt```
+
 ## Launch instructions
 - ```pip install requirements.txt```
 - add `WISHLIST_BOT_TOKEN` system variable with the bot token value: 
