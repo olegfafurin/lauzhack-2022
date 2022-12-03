@@ -62,7 +62,7 @@ class Creator(Table):
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
-                        creator_id TEXT NOT NULL PRIMARY KEY
+                        creator_name TEXT NOT NULL PRIMARY KEY
                     )"""  # TODO: add name
             cur.execute(query)
 
@@ -86,7 +86,7 @@ class Presenter(Table):
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
-                        presenter_id INT NOT NULL PRIMARY KEY
+                        presenter_name TEXT NOT NULL PRIMARY KEY
                     )"""
             cur.execute(query)
 
@@ -110,7 +110,7 @@ class Wish(Table):
                     (   
                         wish_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         
-                        creator_id INTEGER NOT NULL,
+                        creator_name TEXTEGER NOT NULL,
                         name TEXT NOT NULL,
                         
                         booked BOOLEAN NOT NULL,
@@ -121,13 +121,13 @@ class Wish(Table):
                         link TEXT,
                         price REAL,
                         quantity INTEGER,
-                        FOREIGN KEY(creator_id) REFERENCES creator(creator_id)
+                        FOREIGN KEY(creator_name) REFERENCES creator(creator_name)
                     )"""
             cur.execute(query)
 
     # TODO: add photo https://pynative.com/python-sqlite-blob-insert-and-retrieve-digital-data/
     def add(self,
-            creator_id: int,
+            creator_name: str,
             name: str,
             priority: Optional[int] = None,
             relation_type: Optional[int] = None,
@@ -140,17 +140,17 @@ class Wish(Table):
                 f"""
                 INSERT INTO {self.table_name} VALUES
                     (null, ?, ?, 0, 0, ?, ?, ?, ?)
-                """, [creator_id, name, priority, relation_type, link, price, quantity])
+                """, [creator_name, name, priority, relation_type, link, price, quantity])
 
-    def search_by_creator(self, creator_id: int) -> List[int]:
+    def search_by_creator(self, creator_name: str) -> List[int]:
         with db_ops(self.db_path) as cur:
             return list(res[0] for res in cur.execute(
                 f"""
                 SELECT wish_id FROM {self.table_name} 
-                WHERE creator_id = ?
+                WHERE creator_name = ?
                 ORDER BY priority ASC
                 NULLS LAST
-                """, [creator_id, ]
+                """, [creator_name, ]
             )
                         )
 
@@ -165,18 +165,18 @@ class Relation(Table):
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     (
                     relation_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    creator_id INT NOT NULL FOREIGN KEY REFERENCES creator(creator_id),
-                    presenter_id INT NOT NULL,
+                    creator_name TEXT NOT NULL FOREIGN KEY REFERENCES creator(creator_name),
+                    presenter_name TEXT NOT NULL,
                     relation_type TEXT, 
                     FOREIGN KEY(relation_id) REFERENCES relation(relation_id),
-                    FOREIGN KEY(creator_id) REFERENCES creator(creator_id),
-                    FOREIGN KEY(presenter_id) REFERENCES presenter(presenter_id)
+                    FOREIGN KEY(creator_name) REFERENCES creator(creator_name),
+                    FOREIGN KEY(presenter_name) REFERENCES presenter(presenter_name)
                     )"""
             cur.execute(query)
 
     def add(self,
-            creator_id: int,
-            presenter_id: int,
+            creator_name: str,
+            presenter_name: str,
             relation_type: RelationType = None,
             ) -> None:
         with db_ops(self.db_path) as cur:
@@ -184,7 +184,7 @@ class Relation(Table):
                 f"""
                 INSERT INTO {self.table_name} VALUES
                     (null, ?, ?, ?)
-                """, [creator_id, presenter_id, relation_type.value])
+                """, [creator_name, presenter_name, relation_type.value])
 
 
 class Booked(Table):
@@ -198,18 +198,18 @@ class Booked(Table):
                     (   
                         {self.table_name}_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         wish_id INT NOT NULL,
-                        creator_id INT NOT NULL,
-                        presenter_id INT NOT NULL,
+                        creator_name TEXT NOT NULL,
+                        presenter_name TEXT NOT NULL,
                         date INT NOT NULL,
                         FOREIGN KEY(wish_id) REFERENCES present(wish_id),
-                        FOREIGN KEY(creator_id) REFERENCES creator(creator_id),
-                        FOREIGN KEY(presenter_id) REFERENCES presenter(presenter_id)
+                        FOREIGN KEY(creator_name) REFERENCES creator(creator_name),
+                        FOREIGN KEY(presenter_name) REFERENCES presenter(presenter_name)
                     )"""
             cur.execute(query)
 
     def add(self,
-            creator_id: int,
-            presenter_id: int,
+            creator_name: str,
+            presenter_name: str,
             wish_id: int,
             date: Optional[int] = None
             ) -> None:
@@ -220,7 +220,7 @@ class Booked(Table):
                 f"""
                 INSERT INTO {self.table_name} VALUES
                     (null, ?, ?, ?, ?)
-                """, [creator_id, presenter_id, wish_id, date])
+                """, [creator_name, presenter_name, wish_id, date])
 
 
 class Presented(Booked):
