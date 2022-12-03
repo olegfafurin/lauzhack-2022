@@ -20,12 +20,14 @@ logger = logging.getLogger(__name__)
 
 WISHLIST_BOT_TOKEN = os.environ["WISHLIST_BOT_TOKEN"]
 ROLE_CHOICE, MAKE_A_WISH, SEE_WISHES_FOR_USER, NEW_WISH_NAME_REQUEST, NEW_WISH_PHOTO_REQUEST, \
-NEW_WISH_PRICE_REQUEST, EDIT_WISH, ADD_NAME, ADD_PHOTO, NEW_WISH_DESC_REQUEST = range(10)
+    NEW_WISH_PRICE_REQUEST, EDIT_WISH, ADD_NAME, ADD_PHOTO, NEW_WISH_DESC_REQUEST, BACK_TO_MAIN, WHOSE_LIST = range(12)
 
 local_storage = collections.defaultdict(lambda: None)
 
 skip_keyboard = [["Skip"]]
+back_main_keyboard = [["Back to main menu"]]
 skip_markup = ReplyKeyboardMarkup(skip_keyboard, one_time_keyboard=True)
+back_markup = ReplyKeyboardMarkup(back_main_keyboard, one_time_keyboard=True)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -58,7 +60,7 @@ async def role_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         await update.message.reply_text(
             "Please type a target username",
         )
-        return SEE_WISHES_FOR_USER
+        return WHOSE_LIST
     elif choice == "Edit wishes":
         await update.message.reply_text(
             "TODO edit wishes...",
@@ -152,7 +154,19 @@ async def new_wish_desc_request(update: Update, context: ContextTypes.DEFAULT_TY
         tmp_wish.update_desc(desc)
     await update.message.reply_text(
         "Please review your wish before adding:[TODO]",
-        reply_markup=ReplyKeyboardRemove()
+        reply_markup = ReplyKeyboardRemove()
+    )
+    return ConversationHandler.END
+
+async def check_who(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = update.message.from_user
+    logger.info(f"User {user.name} finds a friend's list")
+    tmp_wish = local_storage[user.id]
+    if tmp_wish is not None:
+        return
+    await update.message.reply_text(
+        "This user has not created a list so far. Please try again",
+        reply_markup = ReplyKeyboardRemove()
     )
     return ConversationHandler.END
 
@@ -162,7 +176,7 @@ async def skip_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f"User {user.name} with id={user.id} did not provide a desc for their wish.")
     await update.message.reply_text(
         "No problem! Please review your wish before adding:[TODO]",
-        reply_markup=ReplyKeyboardRemove(),
+        reply_markup = ReplyKeyboardRemove(),
     )
     return ConversationHandler.END
 
@@ -207,9 +221,9 @@ def main():
                                     MessageHandler(filters.Regex("^Skip$"), skip_photo),
                                     CommandHandler("skip", skip_desc)],
             SEE_WISHES_FOR_USER: [MessageHandler(filters.TEXT & ~filters.COMMAND, see_wishes)],
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
 
+            WHOSE_LIST:[MessageHandler(filters.TEXT & ~filters.COMMAND, check_who)]},
+        fallbacks=[CommandHandler("cancel", cancel)]
     )
 
     application.add_handler(conv_handler)
