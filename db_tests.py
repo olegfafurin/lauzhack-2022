@@ -15,7 +15,7 @@ def test_wish() -> None:
     wish.add(creator_name="11", name="test", quantity=5)
     wish.add(creator_name="10", name="TEST", priority=1, quantity=10)
     with db_ops(DB_PATH) as cur:
-        rows = list(cur.execute(f"SELECT name, quantity FROM {wish.table_name}"))
+        rows = list(cur.execute(f"SELECT*, quantity FROM {wish.table_name}"))
         print(rows)
 
         assert rows[0] == ("bla", None)

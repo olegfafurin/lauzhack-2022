@@ -6,7 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from enum import Enum
-from typing import Optional, List, Dict
+from typing import Optional, Dict
 
 DB_PATH = "wishlist.db"
 
@@ -124,7 +124,7 @@ class Wish(Table):
                         relation_type TEXT,
                         link TEXT,
                         price REAL,
-                        photo BLOB,
+                        photo_id TEXT,
                         desc TEXT,
                         quantity INTEGER,
                         FOREIGN KEY(creator_name) REFERENCES creator(creator_name)
@@ -132,7 +132,6 @@ class Wish(Table):
             cur.execute(query)
         return self
 
-    # TODO: add photo https://pynative.com/python-sqlite-blob-insert-and-retrieve-digital-data/
     def add(self,
             creator_name: str,
             name: str,
@@ -140,7 +139,7 @@ class Wish(Table):
             relation_type: Optional[str] = None,
             link: Optional[str] = None,
             price: Optional[float] = None,
-            photo: Optional[bytearray] = None,
+            photo_id: Optional[str] = None,
             desc: Optional[str] = None,
             quantity: Optional[int] = None
             ) -> None:
@@ -149,7 +148,7 @@ class Wish(Table):
                 f"""
                 INSERT INTO {self.table_name} VALUES
                     (null, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, [creator_name, name, priority, relation_type, link, price, photo, desc, quantity])
+                """, [creator_name, name, priority, relation_type, link, price, photo_id, desc, quantity])
 
     def search_by_creator(self, creator_name: str) -> list:
         with db_ops(self.db_path) as cur:
@@ -161,7 +160,7 @@ class Wish(Table):
                 NULLS LAST
                 """, [creator_name, ]
             )
-                        )
+            )
 
 
 class Relation(Table):

@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple
 
 PHOTO_PLACEHOLDER = "Some photo"
 
@@ -18,29 +20,23 @@ class WishData:
     relation_type: Optional[str] = None
     link: Optional[str] = None
     price: Optional[str] = None
-    photo: Optional[bytearray] = None
+    photo_id: Optional[str] = None
     desc: Optional[str] = None
     quantity: Optional[str] = None
 
-    def __repr__(self):
-        d = self.__dict__
-        if d["photo"]:
-            d["photo"] = PHOTO_PLACEHOLDER
-        return d.__repr__()
-
-
-def from_tuple(t):
-    return WishData(
-        wish_id=t[0],
-        booked=t[1],
-        presented=t[2],
-        creator_name=t[3],
-        name=t[4],
-        priority=t[5],
-        relation_type=t[6],
-        link=t[7],
-        price=t[8],
-        photo=t[9],
-        desc=t[10],
-        quantity=t[11],
-    )
+    @staticmethod
+    def from_tuple(t: Tuple) -> WishData:
+        return WishData(
+            wish_id=t[0],
+            booked=t[1],
+            presented=t[2],
+            creator_name=t[3],
+            name=t[4],
+            priority=t[5],
+            relation_type=t[6],
+            link=t[7],
+            price=t[8],
+            photo_id=t[9],
+            desc=t[10],
+            quantity=t[11],
+        )

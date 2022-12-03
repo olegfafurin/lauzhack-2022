@@ -13,7 +13,7 @@ from telegram.ext import (
 )
 
 from db import create_tables_dict, TableName
-from wishdata import WishData, from_tuple
+from wishdata import WishData
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -82,9 +82,10 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f"User {user.name} requested a list of wishes for {update.message.text}")
 
     dbresult = tables[TableName.WISH].search_by_creator(creator_name=update.message.text)
-    res = [from_tuple(a) for a in dbresult]
+    res = [WishData.from_tuple(single_result) for single_result in dbresult]
     text = f"Showing wishes for {update.message.text}\n\n{res}" if res else "not found, please try again"
     await update.message.reply_text(text=text)
+    await update.message.reply_photo(photo=res[-1].photo_id)
     if res:
         return ConversationHandler.END
     else:
@@ -110,14 +111,14 @@ async def new_wish_name_request(update: Update, context: ContextTypes.DEFAULT_TY
 async def new_wish_photo_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     photo_file = await update.message.photo[-1].get_file()
-    buf = bytearray()
-    await photo_file.download_as_bytearray(buf=buf)
+    photo_id = photo_file.file_id
 
     tmp_wish: WishData = wish_dict[user.id]
-    tmp_wish.photo = buf
+    tmp_wish.photo_id = photo_id
 
     await update.message.reply_text(
-        "Thanks for a pic!\n\nHow much does your wish cost?",
+        "Thanks for a pic!\n\n"
+        "How much does your wish cost?",
         reply_markup=skip_markup,
     )
     return NEW_WISH_PRICE_REQUEST
@@ -204,7 +205,8 @@ async def new_wish_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
         tables[TableName.WISH].add(creator_name=user.username,
                                    name=wish.name,
                                    desc=wish.desc,
-                                   price=wish.price)
+                                   price=wish.price,
+                                   photo_id=wish.photo_id)
         await update.message.reply_text(
             f"Your wish is saved!",
             reply_markup=ReplyKeyboardMarkup(
