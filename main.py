@@ -83,9 +83,13 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     dbresult = tables[TableName.WISH].search_by_creator(creator_name=update.message.text)
     res = [WishData.from_tuple(single_result) for single_result in dbresult]
-    text = f"Showing wishes for {update.message.text}\n\n{res}" if res else "not found, please try again"
-    await update.message.reply_text(text=text)
-    await update.message.reply_photo(photo=res[-1].photo_id)
+
+    if not res:
+        await update.message.reply_text(text="User's wishes were not found, please try again")
+    else:
+        await update.message.reply_text(text=f"Showing wishes for {update.message.text}")
+        for result in res:
+            await update.message.reply_photo(photo=result.photo_id, caption=f"{result}")
     if res:
         return ConversationHandler.END
     else:
