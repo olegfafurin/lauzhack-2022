@@ -170,7 +170,7 @@ class Relation(Table):
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     (
                     relation_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                    creator_name TEXT NOT NULL FOREIGN KEY REFERENCES creator(creator_name),
+                    creator_name TEXT NOT NULL,
                     presenter_name TEXT NOT NULL,
                     relation_type TEXT, 
                     FOREIGN KEY(relation_id) REFERENCES relation(relation_id),
