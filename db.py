@@ -182,11 +182,11 @@ class Booked(Table):
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     (   
                         {self.table_name}_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                        present_id INT NOT NULL,
+                        wish_id INT NOT NULL,
                         creator_id INT NOT NULL,
                         presenter_id INT NOT NULL,
                         date INT NOT NULL,
-                        FOREIGN KEY(present_id) REFERENCES present(present_id),
+                        FOREIGN KEY(wish_id) REFERENCES present(wish_id),
                         FOREIGN KEY(creator_id) REFERENCES creator(creator_id),
                         FOREIGN KEY(presenter_id) REFERENCES presenter(presenter_id)
                     )"""
@@ -195,7 +195,7 @@ class Booked(Table):
     def add(self,
             creator_id: int,
             presenter_id: int,
-            present_id: int,
+            wish_id: int,
             date: Optional[int] = None
             ) -> None:
         if not date:
@@ -205,7 +205,7 @@ class Booked(Table):
                 f"""
                 INSERT INTO {self.table_name} VALUES
                     (null, ?, ?, ?, ?)
-                """, [creator_id, presenter_id, present_id, date])
+                """, [creator_id, presenter_id, wish_id, date])
 
 
 class Presented(Booked):
@@ -213,7 +213,7 @@ class Presented(Booked):
         super().__init__()
         self.table_name = "presented"
 
-    def do_present_wish(self, present_id: int) -> None:
+    def do_present_wish(self, wish_id: int) -> None:
         ...
 
 
@@ -251,7 +251,7 @@ def test_booked() -> None:
     with db_ops(DB_PATH) as cur:
         rows = list(cur.execute(f"SELECT creator_id, date FROM {booked.table_name}"))
         print(rows)
-        
+
         # check delay of adding
         assert rows[0][1] != rows[1][1]
 
