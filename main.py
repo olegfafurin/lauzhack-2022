@@ -13,7 +13,7 @@ from telegram.ext import (
 )
 
 from db import create_tables_dict, TableName
-from wishdata import WishData
+from wishdata import WishData, from_tuple
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -66,7 +66,7 @@ async def role_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         await update.message.reply_text(
             "Please type a target username",
         )
-        return WHOSE_LIST
+        return SEE_WISHES_FOR_USER
     elif choice == "Edit wishes":
         await update.message.reply_text(
             "TODO edit wishes...",
@@ -81,14 +81,14 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     logger.info(f"User {user.name} requested a list of wishes for {update.message.text}")
 
-    logger.info(f"found: {tables[TableName.WISH].search_by_creator(creator_name=update.message.text)}")
-    # TODO add other properties
-    #  with picture reverting bytearray
-
-    await update.message.reply_text(
-        f"[TODO] Showing wishes for {update.message.text}\n\n"
-    )
-    return ConversationHandler.END
+    dbresult = tables[TableName.WISH].search_by_creator(creator_name=update.message.text)
+    res = [from_tuple(a) for a in dbresult]
+    text = f"Showing wishes for {update.message.text}\n\n{res}" if res else "not found, please try again"
+    await update.message.reply_text(text=text)
+    if res:
+        return ConversationHandler.END
+    else:
+        return SEE_WISHES_FOR_USER
 
 
 async def new_wish_name_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -178,17 +178,6 @@ async def new_wish_desc_request(update: Update, context: ContextTypes.DEFAULT_TY
     return NEW_WISH_CONFIRMATION
 
 
-async def check_who(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = update.message.from_user
-    logger.info(f"User {user.name} finds a friend's list")
-    # TODO check if the name exists in the DB
-    await update.message.reply_text(
-        "This user has not created a list so far. Please try again",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    return ConversationHandler.END
-
-
 async def skip_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     logger.info(f"User {user.name} did not provide a desc for their wish.")
@@ -212,7 +201,10 @@ async def new_wish_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
 
     if choice == "Confirm":
         wish = wish_dict[user.id]
-        tables[TableName.WISH].add(user.username, wish.name)
+        tables[TableName.WISH].add(creator_name=user.username,
+                                   name=wish.name,
+                                   desc=wish.desc,
+                                   price=wish.price)
         await update.message.reply_text(
             f"Your wish is saved!",
             reply_markup=ReplyKeyboardMarkup(
@@ -272,8 +264,7 @@ def main():
             NEW_WISH_CONFIRMATION: [
                 MessageHandler(filters.Regex("^(Confirm|Reject)$"), new_wish_confirmation)
             ],
-
-            WHOSE_LIST: [MessageHandler(filters.TEXT & ~filters.COMMAND, check_who)]},
+        },
         fallbacks=[CommandHandler("cancel", cancel)]
     )
 

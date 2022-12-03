@@ -151,11 +151,11 @@ class Wish(Table):
                     (null, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, [creator_name, name, priority, relation_type, link, price, photo, desc, quantity])
 
-    def search_by_creator(self, creator_name: str) -> List[int]:
+    def search_by_creator(self, creator_name: str) -> list:
         with db_ops(self.db_path) as cur:
-            return list(res[0] for res in cur.execute(
+            return list(cur.execute(
                 f"""
-                SELECT wish_id FROM {self.table_name} 
+                SELECT * FROM {self.table_name} 
                 WHERE creator_name = ?
                 ORDER BY priority ASC
                 NULLS LAST
