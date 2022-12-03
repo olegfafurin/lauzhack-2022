@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 class RelationType(Enum):
+    PRIVATE = "private"
     FRIEND = "friend"
+    FAMILY = "family"
 
 
 @contextmanager
@@ -99,15 +101,18 @@ class Wish(Table):
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name}
                     (   
                         wish_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        
                         creator_id INTEGER NOT NULL,
                         name TEXT NOT NULL,
+                        
                         booked BOOLEAN NOT NULL,
                         presented BOOLEAN NOT NULL,
+                        
                         priority INTEGER,
+                        relation_type TEXT,
                         link TEXT,
                         price REAL,
                         quantity INTEGER,
-                        relation_type TEXT,
                         FOREIGN KEY(creator_id) REFERENCES creator(creator_id)
                     )"""
             cur.execute(query)
@@ -117,6 +122,7 @@ class Wish(Table):
             creator_id: int,
             name: str,
             priority: Optional[int] = None,
+            relation_type: Optional[int] = None,
             link: Optional[str] = None,
             price: Optional[float] = None,
             quantity: Optional[int] = None
@@ -126,7 +132,7 @@ class Wish(Table):
                 f"""
                 INSERT INTO {self.table_name} VALUES
                     (null, ?, ?, 0, 0, ?, ?, ?, ?)
-                """, [creator_id, name, priority, link, price, quantity])
+                """, [creator_id, name, priority, relation_type, link, price, quantity])
 
     def search_by_creator(self, creator_id: int) -> List[int]:
         with db_ops(self.db_path) as cur:
@@ -153,7 +159,7 @@ class Relation(Table):
                     relation_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     creator_id INT NOT NULL FOREIGN KEY REFERENCES creator(creator_id),
                     presenter_id INT NOT NULL,
-                    type TEXT,
+                    relation_type TEXT, 
                     FOREIGN KEY(relation_id) REFERENCES relation(relation_id),
                     FOREIGN KEY(creator_id) REFERENCES creator(creator_id),
                     FOREIGN KEY(presenter_id) REFERENCES presenter(presenter_id)
@@ -163,7 +169,7 @@ class Relation(Table):
     def add(self,
             creator_id: int,
             presenter_id: int,
-            relation_type: RelationType = RelationType.FRIEND,
+            relation_type: RelationType = None,
             ) -> None:
         with db_ops(self.db_path) as cur:
             cur.execute(
