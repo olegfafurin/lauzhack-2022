@@ -107,6 +107,7 @@ class Wish(Table):
                         link TEXT,
                         price REAL,
                         quantity INTEGER,
+                        relation_type TEXT,
                         FOREIGN KEY(creator_id) REFERENCES creator(creator_id)
                     )"""
             cur.execute(query)
@@ -140,20 +141,20 @@ class Wish(Table):
                         )
 
 
-class Friendship(Table):
+class Relation(Table):
     def __init__(self):
         super().__init__()
-        self.table_name = "friendship"
+        self.table_name = "relation"
 
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     (
-                    friendship_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    relation_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     creator_id INT NOT NULL FOREIGN KEY REFERENCES creator(creator_id),
                     presenter_id INT NOT NULL,
                     type TEXT,
-                    FOREIGN KEY(friendship_id) REFERENCES friendship(friendship_id),
+                    FOREIGN KEY(relation_id) REFERENCES relation(relation_id),
                     FOREIGN KEY(creator_id) REFERENCES creator(creator_id),
                     FOREIGN KEY(presenter_id) REFERENCES presenter(presenter_id)
                     )"""
