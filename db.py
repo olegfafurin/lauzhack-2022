@@ -114,7 +114,7 @@ class Wish(Table):
                     (   
                         wish_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         
-                        creator_name TEXTEGER NOT NULL,
+                        creator_name TEXT NOT NULL,
                         name TEXT NOT NULL,
                         
                         booked BOOLEAN NOT NULL,

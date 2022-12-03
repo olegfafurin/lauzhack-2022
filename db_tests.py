@@ -10,10 +10,10 @@ def test_wish() -> None:
     wish = Wish()
     wish.delete()
     wish.create_table()
-    wish.add(creator_id=10, name="bla", priority=5)
-    wish.add(creator_id=10, name="noprio")
-    wish.add(creator_id=11, name="test", quantity=5)
-    wish.add(creator_id=10, name="TEST", priority=1, quantity=10)
+    wish.add(creator_name="10", name="bla", priority=5)
+    wish.add(creator_name="10", name="noprio")
+    wish.add(creator_name="11", name="test", quantity=5)
+    wish.add(creator_name="10", name="TEST", priority=1, quantity=10)
     with db_ops(DB_PATH) as cur:
         rows = list(cur.execute(f"SELECT name, quantity FROM {wish.table_name}"))
         print(rows)
@@ -22,7 +22,7 @@ def test_wish() -> None:
         assert rows[2] == ("test", 5)
         assert rows[3] == ("TEST", 10)
 
-        assert wish.search_by_creator(10) == [4, 1, 2]
+        assert wish.search_by_creator("10") == [4, 1, 2]
 
 
 def test_booked() -> None:
