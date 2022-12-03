@@ -52,7 +52,7 @@ class Creator(Table):
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
                         telegram_id INT 
-                        deadline DATE 
+                        deadline DATE
                     )"""
             cur.execute(query)
 
@@ -77,8 +77,7 @@ class Presenter(Table):
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
-                        telegram_id INT, 
-                        name TEXT 
+                        telegram_id INT
                     )"""
             cur.execute(query)
 
@@ -154,18 +153,18 @@ class Friendship(Table):
                 """, [creator_id, presenter_id, relation_type.value])
 
 
-class Present(Table):
+class Presented(Table):
     def __init__(self):
         super().__init__()
-        self.table_name = "present"
+        self.table_name = "presented"
 
     def create_table(self) -> None:
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     ( 
+                        present_id INT,
                         creator_id INT, 
-                        presenter_id INT, 
-                        present_id INT
+                        presenter_id INT
                     )"""
             cur.execute(query)
 
