@@ -40,3 +40,10 @@ class WishData:
             desc=t[10],
             quantity=t[11],
         )
+
+    def __str__(self):
+        name_str = f"*name:* {self.name}"
+        price_str = "" if self.price is None else f"\n*price:* {self.price}"
+        desc_str = "" if self.desc is None else f"\n*desc:* {self.desc}"
+        link_str = "" if self.link is None else f"\n[link]({self.link})"
+        return "".join([name_str, price_str, desc_str, link_str])

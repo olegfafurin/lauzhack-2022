@@ -178,7 +178,8 @@ async def new_wish_desc_request(update: Update, context: ContextTypes.DEFAULT_TY
 
     await update.message.reply_text(
         f"Please review your wish before adding:\n\n{tmp_wish}",
-        reply_markup=wish_confirmation_markup
+        reply_markup=wish_confirmation_markup,
+        parse_mode="MarkdownV2"
     )
     return NEW_WISH_CONFIRMATION
 
