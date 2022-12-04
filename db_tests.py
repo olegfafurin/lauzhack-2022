@@ -1,5 +1,5 @@
 # TODO make tests correctly automatic without using actual db
-from db import Creator, Wish, db_ops, DB_PATH, Booked, book_wish, TableName
+from db import Wish, db_ops, DB_PATH, Booked, book_wish, TableName
 
 
 def print_db(table_name: TableName) -> None:
@@ -9,13 +9,14 @@ def print_db(table_name: TableName) -> None:
 
 
 def test_wish() -> None:
-    creator = Creator()
-    creator.delete()
-    creator.create_table()
-
     wish = Wish()
     wish.delete()
     wish.create_table()
+
+    booked = Booked()
+    booked.delete()
+    booked.create_table()
+
     wish.add(creator_name="10", name="bla", priority=5)
     wish.add(creator_name="10", name="noprio")
     wish.add(creator_name="11", name="test", quantity=5)
@@ -31,7 +32,8 @@ def test_wish() -> None:
     print(wish.search_by_creator_and_booked_value("10"))
     assert [wish[0] for wish in wish.search_by_creator_and_booked_value("10")] == [4, 1, 2]
 
-    book_wish(wish_id="1", presenter_name="PRESENTER")
+    book_wish(wish_id=1, presenter_name="PRESENTER")
+    book_wish(wish_id=2, presenter_name="PRESENTER2")
     print_db(TableName.WISH)
     print_db(TableName.BOOKED)
 
@@ -54,6 +56,3 @@ def test_booked() -> None:
 if __name__ == "__main__":
     test_wish()
     # test_booked()
-
-    # wish = Wish()
-    # wish.delete()

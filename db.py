@@ -215,14 +215,14 @@ class Booked(Table):
         with db_ops(self.db_path) as cur:
             query = f"""CREATE TABLE IF NOT EXISTS {self.table_name} 
                     (   
-                        {self.table_name}_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         wish_id INT NOT NULL,
                         creator_name TEXT NOT NULL,
                         presenter_name TEXT NOT NULL,
                         date INT NOT NULL,
                         FOREIGN KEY(wish_id) REFERENCES present(wish_id),
                         FOREIGN KEY(creator_name) REFERENCES creator(creator_name),
-                        FOREIGN KEY(presenter_name) REFERENCES presenter(presenter_name)
+                        FOREIGN KEY(presenter_name) REFERENCES presenter(presenter_name),
+                        PRIMARY KEY(wish_id, presenter_name)
                     )"""
             cur.execute(query)
         return self
@@ -275,15 +275,18 @@ def book_wish(wish_id: int, presenter_name: str):
                 WHERE wish_id = ?
             """, [wish_id, ]
         )
+
         cur.execute(
             f"""
             INSERT INTO {TableName.BOOKED.value} VALUES
-                (null, ?, ?, ?, ?)
+                (?, ?, ?, ?)
             """, [wish_id, creator_name, presenter_name, current_time_in_ms_since_1970()]
         )
+
         cur.execute("COMMIT")
+        logger.info(f"Booked wish with wish_id={wish_id}")
     except sql.Error:
-        print("Booking failed!")
+        logger.error(f"Booking failed for wish with wish_id={wish_id}")
         cur.execute("ROLLBACK")
 
 
