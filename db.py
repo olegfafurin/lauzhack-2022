@@ -6,7 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from enum import Enum
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Tuple
 
 DB_PATH = "../wishlist.db"
 
@@ -150,17 +150,37 @@ class Wish(Table):
                     (null, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, [creator_name, name, priority, relation_type, link, price, photo_id, desc, quantity])
 
-    def search_by_creator_and_booked_value(self, creator_name: str, booked_value_needed: bool = False) -> List[tuple]:
+    def search_by_creator_and_booked_value(self, creator_name: str, booked_value_needed: bool = False) -> Tuple[
+        List[tuple], List[tuple]]:
         with db_ops(self.db_path) as cur:
-            return list(cur.execute(
+            wishes_own = list(cur.execute(
                 f"""
-                SELECT * FROM {self.table_name} 
+                SELECT *
+                FROM {self.table_name} 
                 WHERE creator_name = ? and booked = ? 
                 ORDER BY priority ASC
                 NULLS LAST
                 """, [creator_name, int(booked_value_needed)]
             )
             )
+            wishes_booked_ids = list(cur.execute(
+                f"""
+                SELECT wish_id
+                FROM {TableName.BOOKED.value} 
+                WHERE presenter_name = ? 
+                """, [creator_name, ]
+            ))
+            wishes_booked = []
+            for wish_id in wishes_booked_ids:
+                wishes_booked.append(list(cur.execute(
+                    f"""
+                    SELECT * FROM {self.table_name} 
+                    WHERE wish_id = ? 
+                    """, [wish_id, ]
+                )
+                )
+                                     [0])
+            return wishes_own, wishes_booked
 
     def change_booked(self, wish_id: int, booked_value_to_set: bool):
         with db_ops(self.db_path) as cur:

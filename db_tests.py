@@ -30,7 +30,7 @@ def test_wish() -> None:
     assert rows[3] == ("TEST", 10)
 
     print(wish.search_by_creator_and_booked_value("10"))
-    assert [wish[0] for wish in wish.search_by_creator_and_booked_value("10")] == [4, 1, 2]
+    assert [wish[0] for wish in wish.search_by_creator_and_booked_value("10")[0]] == [4, 1, 2]
 
     book_wish(wish_id=1, presenter_name="PRESENTER")
     book_wish(wish_id=2, presenter_name="PRESENTER2")

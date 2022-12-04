@@ -84,27 +84,28 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     target_user = update.message.text.strip("@")
     logger.info(f"User {user.name} requested a list of wishes for {target_user}")
-    dbresult = tables[TableName.WISH].search_by_creator_and_booked_value(creator_name=target_user)
-    res = [WishData.from_tuple(single_result) for single_result in dbresult]
+    dbresult_own, dbresult_booked = tables[TableName.WISH].search_by_creator_and_booked_value(creator_name=target_user)
+    wishes_list = [WishData.from_tuple(single_result) for single_result in dbresult_own]
 
-    target_user_to_list_of_his_wishes[target_user] = {i + 1: wish.wish_id for i, wish in enumerate(res)}
+    target_user_to_list_of_his_wishes[target_user] = {i + 1: wish.wish_id for i, wish in enumerate(wishes_list)}
     asked_user[user.username] = target_user
 
-    if not res:
-        await update.message.reply_text(text="User's wishes were not found, please try again")
-    else:
-        await update.message.reply_text(text=f"Showing wishes for {target_user}")
-        for i, result in enumerate(res):
-            if result.photo_id is None:
-                await update.message.reply_text(text=f"*Wish \#{i + 1}\n\n*{result}", parse_mode="MarkdownV2")
-            else:
-                await update.message.reply_photo(photo=result.photo_id, caption=f"*Wish* \#{i + 1}\n\n{result}",
-                                                 parse_mode="MarkdownV2")
-        await update.message.reply_text(text=f"Would you like to book a wish? Just send the number or /cancel",
-                                        reply_markup=ReplyKeyboardRemove())
-    if res:
+    for (wish_type_string, wishes_list) in [("own", dbresult_own), ("booked", dbresult_booked)]:
+        if wishes_list:
+            await update.message.reply_text(text=f"Showing wishes for {target_user} of the type {wish_type_string}")
+            for i, result in enumerate(wishes_list):
+                if result.photo_id is None:
+                    await update.message.reply_text(text=f"*Wish \#{i + 1}\n\n*{result}", parse_mode="MarkdownV2")
+                else:
+                    await update.message.reply_photo(photo=result.photo_id, caption=f"*Wish* \#{i + 1}\n\n{result}",
+                                                     parse_mode="MarkdownV2")
+    await update.message.reply_text(text=f"Would you like to book a wish? Just send the number or /cancel",
+                                    reply_markup=ReplyKeyboardRemove())
+
+    if dbresult_own or dbresult_booked:
         return BOOK_WISH
     else:
+        await update.message.reply_text(text="User's wishes were not found, please try again")
         return SEE_WISHES_FOR_USER
 
 
