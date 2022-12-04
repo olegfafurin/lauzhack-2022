@@ -96,9 +96,10 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await update.message.reply_text(text=f"Showing wishes for {target_user}")
         for i, result in enumerate(res):
             if result.photo_id is None:
-                await update.message.reply_text(text=f"*Wish \#{i + 1}\n\n*{result}")
+                await update.message.reply_text(text=f"*Wish \#{i + 1}\n\n*{result}", parse_mode="MarkdownV2")
             else:
-                await update.message.reply_photo(photo=result.photo_id, caption=f"*Wish \#{i + 1}\n\n{result}")
+                await update.message.reply_photo(photo=result.photo_id, caption=f"*Wish* \#{i + 1}\n\n{result}",
+                                                 parse_mode="MarkdownV2")
         await update.message.reply_text(text=f"Would you like to book a wish? Just send the number or /cancel",
                                         reply_markup=ReplyKeyboardRemove())
     if res:
