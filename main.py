@@ -1,5 +1,6 @@
 import logging
 import os
+import sqlite3
 from typing import Dict
 
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
@@ -12,7 +13,7 @@ from telegram.ext import (
     filters,
 )
 
-from db.db import create_tables_dict, TableName
+from db.db import create_tables_dict, TableName, book_wish
 from wishdata import WishData
 
 logging.basicConfig(
@@ -24,10 +25,11 @@ logger = logging.getLogger(__name__)
 WISHLIST_BOT_TOKEN = os.environ["WISHLIST_BOT_TOKEN"]
 ROLE_CHOICE, MAKE_A_WISH, SEE_WISHES_FOR_USER, NEW_WISH_NAME_REQUEST, NEW_WISH_PHOTO_REQUEST, \
 NEW_WISH_PRICE_REQUEST, EDIT_WISH, ADD_NAME, ADD_PHOTO, NEW_WISH_DESC_REQUEST, NEW_WISH_CONFIRMATION, \
-BACK_TO_MAIN, WHOSE_LIST = range(13)
+BACK_TO_MAIN, WHOSE_LIST, BOOK_WISH = range(14)
 
 wish_dict: Dict[int, WishData] = dict()
 target_user_to_list_of_his_wishes: Dict[str, Dict[int, int]] = dict()
+asked_user: Dict[str, str] = dict()
 
 tables = create_tables_dict()
 
@@ -85,20 +87,42 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     dbresult = tables[TableName.WISH].search_by_creator_and_booked_value(creator_name=target_user)
     res = [WishData.from_tuple(single_result) for single_result in dbresult]
 
-    target_user_to_list_of_his_wishes[target_user] = {i: wish.wish_id for i, wish in enumerate(res)}
+    target_user_to_list_of_his_wishes[target_user] = {i + 1: wish.wish_id for i, wish in enumerate(res)}
+    asked_user[user.username] = target_user
 
     if not res:
         await update.message.reply_text(text="User's wishes were not found, please try again")
     else:
         await update.message.reply_text(text=f"Showing wishes for {target_user}")
-        for result in res:
-            # TODO: check the photo exists before replying
-            await update.message.reply_photo(photo=result.photo_id, caption=f"{result}", parse_mode="MarkdownV2")
+        for i, result in enumerate(res):
+            if result.photo_id is None:
+                await update.message.reply_text(text=f"*Wish \#{i + 1}\n\n*{result}", parse_mode="MarkdownV2")
+            else:
+                await update.message.reply_photo(photo=result.photo_id, caption=f"*Wish \#{i + 1}\n\n{result}", parse_mode="MarkdownV2")
+        await update.message.reply_text(text=f"Would you like to book a wish? Just send the number or /cancel", reply_markup=ReplyKeyboardRemove())
     if res:
-        return ConversationHandler.END
+        return BOOK_WISH
     else:
         return SEE_WISHES_FOR_USER
 
+
+async def book_wish_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = update.message.from_user
+    wish_id_str = update.message.text
+    try:
+        target_user = asked_user[user.username]
+        wish_id = target_user_to_list_of_his_wishes[target_user][int(wish_id_str)]
+        book_wish(wish_id=wish_id, presenter_name=user.username)
+        await update.message.reply_text("Your booking is now confirmed!")
+        return ROLE_CHOICE
+    except ValueError:
+        logger.error("incorrect value (wish number is not int?)")
+        await update.message.reply_text("Incorrect parameter, please try again!", reply_markup=ReplyKeyboardRemove())
+        return BOOK_WISH
+    except sqlite3.Error:
+        logger.error("booking went wrong")
+        await update.message.reply_text("Incorrect parameter, please try again!", reply_markup=ReplyKeyboardRemove())
+        return BOOK_WISH
 
 async def new_wish_name_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     wish_name = update.message.text
@@ -280,6 +304,9 @@ def main():
             NEW_WISH_CONFIRMATION: [
                 MessageHandler(filters.Regex("^(Confirm|Reject)$"), new_wish_confirmation)
             ],
+            BOOK_WISH: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, book_wish_handler)
+            ]
         },
         fallbacks=[CommandHandler("cancel", cancel)]
     )
