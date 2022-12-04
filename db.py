@@ -6,7 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from enum import Enum
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 DB_PATH = "wishlist.db"
 
@@ -150,16 +150,26 @@ class Wish(Table):
                     (null, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, [creator_name, name, priority, relation_type, link, price, photo_id, desc, quantity])
 
-    def search_by_creator(self, creator_name: str) -> list:
+    def search_by_creator_and_booked_value(self, creator_name: str, booked_value_needed: bool = False) -> List[tuple]:
         with db_ops(self.db_path) as cur:
             return list(cur.execute(
                 f"""
                 SELECT * FROM {self.table_name} 
-                WHERE creator_name = ?
+                WHERE creator_name = ? and booked = ? 
                 ORDER BY priority ASC
                 NULLS LAST
-                """, [creator_name, ]
+                """, [creator_name, int(booked_value_needed)]
             )
+            )
+
+    def change_booked(self, wish_id: int, booked_value_to_set: bool):
+        with db_ops(self.db_path) as cur:
+            cur.execute(
+                f"""
+                UPDATE {self.table_name}
+                SET booked = ? 
+                WHERE wish_id = ?
+                """, [int(booked_value_to_set), wish_id, ]
             )
 
 
@@ -221,10 +231,10 @@ class Booked(Table):
             creator_name: str,
             presenter_name: str,
             wish_id: int,
-            date: Optional[int] = None
+            date: Optional[int] = None,
             ) -> None:
         if not date:
-            date = int(time.time() * 1000)
+            date = current_time_in_ms_since_1970()
         with db_ops(self.db_path) as cur:
             cur.execute(
                 f"""
@@ -242,8 +252,47 @@ class Presented(Booked):
         ...
 
 
+def book_wish(wish_id: int, presenter_name: str):
+    sql = sqlite3.connect(DB_PATH)
+    sql.isolation_level = None
+    cur = sql.cursor()
+    cur.execute("BEGIN")
+    try:
+        creator_name_list = list(cur.execute(
+            f"""
+                SELECT creator_name FROM {TableName.WISH.value}
+                WHERE wish_id = ?
+            """, [wish_id, ]
+        ))
+        if not creator_name_list:
+            raise ValueError("This wish_id doesn't exist")
+        creator_name = creator_name_list[0][0]
+
+        cur.execute(
+            f"""
+                UPDATE {TableName.WISH.value}
+                SET booked = 1 
+                WHERE wish_id = ?
+            """, [wish_id, ]
+        )
+        cur.execute(
+            f"""
+            INSERT INTO {TableName.BOOKED.value} VALUES
+                (null, ?, ?, ?, ?)
+            """, [wish_id, creator_name, presenter_name, current_time_in_ms_since_1970()]
+        )
+        cur.execute("COMMIT")
+    except sql.Error:
+        print("Booking failed!")
+        cur.execute("ROLLBACK")
+
+
+def current_time_in_ms_since_1970() -> int:
+    return int(time.time() * 1000)
+
+
 def create_tables_dict() -> Dict[Enum, Table]:
-    return {
+    return {  # TODO make proper singletones
         TableName.CREATOR: Creator().create_table(),
         TableName.PRESENTER: Presenter().create_table(),
         TableName.WISH: Wish().create_table(),
