@@ -246,7 +246,9 @@ async def edit_wish(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Cancels and ends the conversation."""
     user = update.message.from_user
-    del wish_dict[user.id]
+    if user.id in wish_dict:
+        del wish_dict[user.id]
+        logger.info(f"Removed temporary wish created for {user.name} with id={user.id}.")
     logger.info(f"User {user.name} with id={user.id} canceled the conversation.")
     await update.message.reply_text(
         "Bye! Come back soon!", reply_markup=ReplyKeyboardRemove()
