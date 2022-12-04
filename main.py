@@ -79,17 +79,17 @@ async def role_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
-    logger.info(f"User {user.name} requested a list of wishes for {update.message.text}")
-
-    dbresult = tables[TableName.WISH].search_by_creator(creator_name=update.message.text)
+    target_user = update.message.text.strip("@")
+    logger.info(f"User {user.name} requested a list of wishes for {target_user}")
+    dbresult = tables[TableName.WISH].search_by_creator(creator_name=target_user)
     res = [WishData.from_tuple(single_result) for single_result in dbresult]
 
     if not res:
         await update.message.reply_text(text="User's wishes were not found, please try again")
     else:
-        await update.message.reply_text(text=f"Showing wishes for {update.message.text}")
+        await update.message.reply_text(text=f"Showing wishes for {target_user}")
         for result in res:
-            await update.message.reply_photo(photo=result.photo_id, caption=f"{result}")
+            await update.message.reply_photo(photo=result.photo_id, caption=f"{result}", parse_mode="MarkdownV2")
     if res:
         return ConversationHandler.END
     else:
