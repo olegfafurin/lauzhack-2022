@@ -13,7 +13,7 @@ from telegram.ext import (
     filters,
 )
 
-from db.db import create_tables_dict, TableName, book_wish
+from db import create_tables_dict, TableName, book_wish
 from wishdata import WishData
 
 logging.basicConfig(
@@ -96,10 +96,11 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await update.message.reply_text(text=f"Showing wishes for {target_user}")
         for i, result in enumerate(res):
             if result.photo_id is None:
-                await update.message.reply_text(text=f"*Wish \#{i + 1}\n\n*{result}", parse_mode="MarkdownV2")
+                await update.message.reply_text(text=f"*Wish \#{i + 1}\n\n*{result}")
             else:
-                await update.message.reply_photo(photo=result.photo_id, caption=f"*Wish \#{i + 1}\n\n{result}", parse_mode="MarkdownV2")
-        await update.message.reply_text(text=f"Would you like to book a wish? Just send the number or /cancel", reply_markup=ReplyKeyboardRemove())
+                await update.message.reply_photo(photo=result.photo_id, caption=f"*Wish \#{i + 1}\n\n{result}")
+        await update.message.reply_text(text=f"Would you like to book a wish? Just send the number or /cancel",
+                                        reply_markup=ReplyKeyboardRemove())
     if res:
         return BOOK_WISH
     else:
@@ -123,6 +124,7 @@ async def book_wish_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         logger.error("booking went wrong")
         await update.message.reply_text("Incorrect parameter, please try again!", reply_markup=ReplyKeyboardRemove())
         return BOOK_WISH
+
 
 async def new_wish_name_request(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     wish_name = update.message.text
@@ -231,7 +233,7 @@ async def new_wish_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
     choice = update.message.text
     user = update.message.from_user
 
-    reply_keyboard = [["Make a wish", "See wishes", "Edit wishes"]]
+    reply_keyboard = [["Make a wish", "See wishes"]]  # TODO "Edit wishes"
 
     if choice == "Confirm":
         wish = wish_dict[user.id]
