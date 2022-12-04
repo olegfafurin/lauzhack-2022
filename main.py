@@ -81,7 +81,7 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     target_user = update.message.text.strip("@")
     logger.info(f"User {user.name} requested a list of wishes for {target_user}")
-    dbresult = tables[TableName.WISH].search_by_creator(creator_name=target_user)
+    dbresult = tables[TableName.WISH].search_by_creator_and_booked_value(creator_name=target_user)
     res = [WishData.from_tuple(single_result) for single_result in dbresult]
 
     if not res:
