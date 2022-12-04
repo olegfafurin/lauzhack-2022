@@ -12,7 +12,7 @@ from telegram.ext import (
     filters,
 )
 
-from db import create_tables_dict, TableName
+from db.db import create_tables_dict, TableName
 from wishdata import WishData
 
 logging.basicConfig(
@@ -27,6 +27,7 @@ NEW_WISH_PRICE_REQUEST, EDIT_WISH, ADD_NAME, ADD_PHOTO, NEW_WISH_DESC_REQUEST, N
 BACK_TO_MAIN, WHOSE_LIST = range(13)
 
 wish_dict: Dict[int, WishData] = dict()
+target_user_to_list_of_his_wishes: Dict[str, Dict[int, int]] = dict()
 
 tables = create_tables_dict()
 
@@ -83,6 +84,8 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f"User {user.name} requested a list of wishes for {target_user}")
     dbresult = tables[TableName.WISH].search_by_creator_and_booked_value(creator_name=target_user)
     res = [WishData.from_tuple(single_result) for single_result in dbresult]
+
+    target_user_to_list_of_his_wishes[target_user] = {i: wish.wish_id for i, wish in enumerate(res)}
 
     if not res:
         await update.message.reply_text(text="User's wishes were not found, please try again")

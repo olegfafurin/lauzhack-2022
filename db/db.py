@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from enum import Enum
 from typing import Optional, Dict, List
 
-DB_PATH = "wishlist.db"
+DB_PATH = "../wishlist.db"
 
 logger = logging.getLogger(__name__)
 
