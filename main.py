@@ -90,7 +90,7 @@ async def see_wishes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await update.message.reply_text(text=f"Showing wishes for {target_user}")
         for result in res:
             # TODO: check the photo exists before replying
-            await update.message.reply_photo(photo=result.photo_id, caption=f"{result}")
+            await update.message.reply_photo(photo=result.photo_id, caption=f"{result}", parse_mode="MarkdownV2")
     if res:
         return ConversationHandler.END
     else:
