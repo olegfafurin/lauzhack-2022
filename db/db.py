@@ -70,14 +70,14 @@ class Creator(Table):
         return self
 
     def add(self,
-            telegram_id: str
+            creator_name: str
             ) -> None:
         with db_ops(self.db_path) as cur:
             cur.execute(
                 f"""
                 INSERT INTO {self.table_name} VALUES
                     (?)
-                """, [telegram_id, ])
+                """, [creator_name, ])
 
 
 class Presenter(Table):
