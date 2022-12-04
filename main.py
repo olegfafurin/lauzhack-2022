@@ -213,13 +213,11 @@ async def new_wish_confirmation(update: Update, context: ContextTypes.DEFAULT_TY
         wish = wish_dict[user.id]
         creator_name = user.username
 
-        # TODO minor: make as transaction
         tables[TableName.WISH].add(creator_name=creator_name,
                                    name=wish.name,
                                    desc=wish.desc,
                                    price=wish.price,
                                    photo_id=wish.photo_id)
-        tables[TableName.CREATOR].add(creator_name=creator_name)
 
         await update.message.reply_text(
             f"Your wish is saved!",
