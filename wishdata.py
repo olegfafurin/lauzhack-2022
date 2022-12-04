@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
+from telegram.helpers import escape_markdown
+
 PHOTO_PLACEHOLDER = "Some photo"
 
 
@@ -46,4 +48,4 @@ class WishData:
         price_str = "" if self.price is None else f"\n*price:* {self.price}"
         desc_str = "" if self.desc is None else f"\n*desc:* {self.desc}"
         link_str = "" if self.link is None else f"\n[link]({self.link})"
-        return "".join([name_str, price_str, desc_str, link_str])
+        return escape_markdown("".join([name_str, price_str, desc_str, link_str]), version=2)
